@@ -1,14 +1,15 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
+import pandas as pd
 from models import Player, OptimizationRequest, OptimizedTeam
-from data_loader import DataLoader
+from data_loader import load_players
 from optimizer import TeamOptimizer
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Sports Team Optimizer API",
-    description="API for optimizing sports team selection",
+    title="Cricket Team Optimizer API",
+    description="API for optimizing cricket team selection",
     version="1.0.0"
 )
 
@@ -22,15 +23,40 @@ app.add_middleware(
 )
 
 # Initialize services
-data_loader = DataLoader()
 optimizer = TeamOptimizer()
+
+# Global variable to store loaded data
+_players_df: pd.DataFrame | None = None
+
+
+def get_players_df() -> pd.DataFrame:
+    """Get cached players dataframe."""
+    global _players_df
+    if _players_df is None:
+        _players_df = load_players()
+    return _players_df
+
+
+def df_to_players(df: pd.DataFrame) -> List[Player]:
+    """Convert DataFrame to list of Player models."""
+    players = []
+    for _, row in df.iterrows():
+        player = Player(
+            name=str(row["name"]),
+            runs=float(row["runs"]),
+            wickets=float(row["wickets"]),
+            strike_rate=float(row["strike_rate"]),
+            price=float(row["price"])
+        )
+        players.append(player)
+    return players
 
 
 @app.on_event("startup")
 async def startup_event():
     """Load player data on startup."""
     try:
-        data_loader.load_data()
+        get_players_df()
         print("Player data loaded successfully")
     except Exception as e:
         print(f"Warning: Could not load player data: {e}")
@@ -40,7 +66,7 @@ async def startup_event():
 async def root():
     """Root endpoint."""
     return {
-        "message": "Sports Team Optimizer API",
+        "message": "Cricket Team Optimizer API",
         "version": "1.0.0",
         "endpoints": {
             "players": "/players",
@@ -56,45 +82,47 @@ async def health_check():
 
 
 @app.get("/players", response_model=List[Player])
-async def get_players(position: str | None = None, max_salary: float | None = None):
+async def get_all_players():
     """
-    Get all players or filter by position and/or max salary.
-    
-    Args:
-        position: Filter by position (optional)
-        max_salary: Filter by maximum salary (optional)
+    Get all players.
     
     Returns:
         List of players
     """
     try:
-        if position or max_salary:
-            players = data_loader.filter_players(position=position, max_salary=max_salary)
-        else:
-            players = data_loader.get_all_players()
-        
+        df = get_players_df()
+        players = df_to_players(df)
         return players
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error loading players: {str(e)}")
 
 
-@app.get("/players/{player_id}", response_model=Player)
-async def get_player(player_id: int):
+@app.get("/players/{player_name}", response_model=Player)
+async def get_player(player_name: str):
     """
-    Get a specific player by ID.
+    Get a specific player by name.
     
     Args:
-        player_id: Player ID
+        player_name: Player name
     
     Returns:
         Player object
     """
     try:
-        player = data_loader.get_player_by_id(player_id)
+        df = get_players_df()
+        player_row = df[df["name"] == player_name]
         
-        if player is None:
-            raise HTTPException(status_code=404, detail=f"Player with ID {player_id} not found")
+        if player_row.empty:
+            raise HTTPException(status_code=404, detail=f"Player '{player_name}' not found")
         
+        row = player_row.iloc[0]
+        player = Player(
+            name=str(row["name"]),
+            runs=float(row["runs"]),
+            wickets=float(row["wickets"]),
+            strike_rate=float(row["strike_rate"]),
+            price=float(row["price"])
+        )
         return player
     except HTTPException:
         raise
@@ -115,21 +143,22 @@ async def optimize_team(request: OptimizationRequest):
     """
     try:
         # Get all available players
-        available_players = data_loader.get_all_players()
+        df = get_players_df()
+        available_players = df_to_players(df)
         
         if not available_players:
             raise HTTPException(status_code=500, detail="No player data available")
         
         # Convert lists to sets
-        excluded_ids = set(request.excluded_players) if request.excluded_players else set()
-        required_ids = set(request.required_players) if request.required_players else set()
+        excluded_names = set(request.excluded_players) if request.excluded_players else set()
+        required_names = set(request.required_players) if request.required_players else set()
         
         # Run optimization
         result = optimizer.optimize(
             available_players=available_players,
             constraints=request.constraints,
-            excluded_player_ids=excluded_ids,
-            required_player_ids=required_ids
+            excluded_player_names=excluded_names,
+            required_player_names=required_names
         )
         
         if not result.success:
