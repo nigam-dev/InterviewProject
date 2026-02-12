@@ -17,9 +17,14 @@ def optimize_team(
     Constraints:
         - sum(price) <= budget
         - select exactly team_size players
+        - Role-based constraints:
+            * Exactly 1 WK (Wicketkeeper)
+            * Exactly 4 BAT (Batsman)
+            * Exactly 3 BOWL (Bowler)
+            * Exactly 3 ALL (All-rounder)
     
     Args:
-        df: DataFrame with columns: name, price, score
+        df: DataFrame with columns: name, price, score, role
         budget: Maximum budget allowed
         team_size: Number of players to select (default: 11)
     
@@ -33,7 +38,7 @@ def optimize_team(
         ValueError: If required columns are missing or no feasible solution exists
     """
     # Validate required columns
-    required_columns = ["name", "price", "score"]
+    required_columns = ["name", "price", "score", "role"]
     missing_columns = set(required_columns) - set(df.columns)
     
     if missing_columns:
@@ -55,6 +60,7 @@ def optimize_team(
     indices = df.index.tolist()
     scores = df["score"].values
     prices = df["price"].values
+    roles = df["role"].values
     
     # Create optimization problem
     prob = pulp.LpProblem("Cricket_Team_Optimization", pulp.LpMaximize)
@@ -82,6 +88,35 @@ def optimize_team(
         player_vars[idx]
         for idx in indices
     ) == team_size, "Team_Size_Constraint"
+    
+    # Constraint 3: Role-based constraints
+    # Exactly 1 Wicketkeeper
+    prob += pulp.lpSum(
+        player_vars[idx]
+        for i, idx in enumerate(indices)
+        if roles[i] == "WK"
+    ) == 1, "Wicketkeeper_Constraint"
+    
+    # Exactly 4 Batsmen
+    prob += pulp.lpSum(
+        player_vars[idx]
+        for i, idx in enumerate(indices)
+        if roles[i] == "BAT"
+    ) == 4, "Batsman_Constraint"
+    
+    # Exactly 3 Bowlers
+    prob += pulp.lpSum(
+        player_vars[idx]
+        for i, idx in enumerate(indices)
+        if roles[i] == "BOWL"
+    ) == 3, "Bowler_Constraint"
+    
+    # Exactly 3 All-rounders
+    prob += pulp.lpSum(
+        player_vars[idx]
+        for i, idx in enumerate(indices)
+        if roles[i] == "ALL"
+    ) == 3, "All_Rounder_Constraint"
     
     # Solve the problem using CBC solver (deterministic and stable)
     solver = pulp.PULP_CBC_CMD(msg=0)
