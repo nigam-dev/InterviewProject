@@ -1,113 +1,108 @@
-from typing import List, Set
+import pandas as pd
 import pulp
-from models import Player, OptimizationConstraints, OptimizedTeam
+from typing import Dict, List, Any
 
 
-class TeamOptimizer:
-    """Handles cricket team optimization using linear programming."""
+def optimize_team(
+    df: pd.DataFrame,
+    budget: int,
+    team_size: int = 11
+) -> Dict[str, Any]:
+    """
+    Optimize cricket team selection using Linear Programming.
     
-    def optimize(
-        self,
-        available_players: List[Player],
-        constraints: OptimizationConstraints,
-        excluded_player_names: Set[str] | None = None,
-        required_player_names: Set[str] | None = None
-    ) -> OptimizedTeam:
-        """
-        Optimize cricket team selection based on constraints.
-        
-        Args:
-            available_players: List of all available players
-            constraints: Optimization constraints (budget, team_size)
-            excluded_player_names: Set of player names to exclude
-            required_player_names: Set of player names that must be included
-        
-        Returns:
-            OptimizedTeam object with results
-        """
-        excluded_player_names = excluded_player_names or set()
-        required_player_names = required_player_names or set()
-        
-        # Filter out excluded players
-        players = [p for p in available_players if p.name not in excluded_player_names]
-        
-        if not players:
-            return OptimizedTeam(
-                players=[],
-                total_price=0.0,
-                total_runs=0.0,
-                total_wickets=0.0,
-                avg_strike_rate=0.0,
-                success=False,
-                message="No players available after applying exclusions"
-            )
-        
-        # Create the optimization problem
-        prob = pulp.LpProblem("Cricket_Team_Optimization", pulp.LpMaximize)
-        
-        # Decision variables: 1 if player is selected, 0 otherwise
-        player_vars = {
-            player.name: pulp.LpVariable(f"player_{i}", cat="Binary")
-            for i, player in enumerate(players)
-        }
-        
-        # Objective: Maximize team score (runs + weighted wickets)
-        prob += pulp.lpSum(
-            (player.runs + player.wickets * 20) * player_vars[player.name]
-            for player in players
-        ), "Total_Score"
-        
-        # Constraint: Budget
-        prob += pulp.lpSum(
-            player.price * player_vars[player.name]
-            for player in players
-        ) <= constraints.budget, "Budget_Constraint"
-        
-        # Constraint: Team size (exactly team_size players)
-        prob += pulp.lpSum(
-            player_vars[player.name]
-            for player in players
-        ) == constraints.team_size, "Team_Size"
-        
-        # Constraint: Required players must be selected
-        for player_name in required_player_names:
-            if player_name in player_vars:
-                prob += player_vars[player_name] == 1, f"Required_Player_{player_name}"
-        
-        # Solve the optimization problem
-        solver = pulp.PULP_CBC_CMD(msg=0)
-        prob.solve(solver)
-        
-        # Check if solution was found
-        if prob.status != pulp.LpStatusOptimal:
-            return OptimizedTeam(
-                players=[],
-                total_price=0.0,
-                total_runs=0.0,
-                total_wickets=0.0,
-                avg_strike_rate=0.0,
-                success=False,
-                message=f"No optimal solution found. Status: {pulp.LpStatus[prob.status]}"
-            )
-        
-        # Extract selected players
-        selected_players = [
-            player for player in players
-            if player_vars[player.name].varValue == 1
-        ]
-        
-        # Calculate totals
-        total_price = sum(p.price for p in selected_players)
-        total_runs = sum(p.runs for p in selected_players)
-        total_wickets = sum(p.wickets for p in selected_players)
-        avg_sr = sum(p.strike_rate for p in selected_players) / len(selected_players) if selected_players else 0.0
-        
-        return OptimizedTeam(
-            players=selected_players,
-            total_price=total_price,
-            total_runs=total_runs,
-            total_wickets=total_wickets,
-            avg_strike_rate=avg_sr,
-            success=True,
-            message="Optimization successful"
-        )
+    Objective:
+        Maximize total score
+    
+    Constraints:
+        - sum(price) <= budget
+        - select exactly team_size players
+    
+    Args:
+        df: DataFrame with columns: name, price, score
+        budget: Maximum budget allowed
+        team_size: Number of players to select (default: 11)
+    
+    Returns:
+        Dict containing:
+            - players: List of selected player records (as dicts)
+            - total_cost: Total price of selected team
+            - total_score: Total score of selected team
+    
+    Raises:
+        ValueError: If required columns are missing or no feasible solution exists
+    """
+    # Validate required columns
+    required_columns = ["name", "price", "score"]
+    missing_columns = set(required_columns) - set(df.columns)
+    
+    if missing_columns:
+        raise ValueError(f"Missing required columns: {missing_columns}")
+    
+    if df.empty:
+        raise ValueError("DataFrame is empty")
+    
+    if team_size <= 0:
+        raise ValueError(f"team_size must be positive, got {team_size}")
+    
+    if team_size > len(df):
+        raise ValueError(f"team_size ({team_size}) exceeds available players ({len(df)})")
+    
+    if budget <= 0:
+        raise ValueError(f"budget must be positive, got {budget}")
+    
+    # Create optimization problem
+    prob = pulp.LpProblem("Cricket_Team_Optimization", pulp.LpMaximize)
+    
+    # Create binary decision variables for each player
+    # Use player index to ensure deterministic behavior
+    player_vars = {}
+    for idx in df.index:
+        player_vars[idx] = pulp.LpVariable(f"player_{idx}", cat="Binary")
+    
+    # Objective: Maximize total score
+    prob += pulp.lpSum(
+        df.loc[idx, "score"] * player_vars[idx]
+        for idx in df.index
+    ), "Total_Score"
+    
+    # Constraint 1: Total price <= budget
+    prob += pulp.lpSum(
+        df.loc[idx, "price"] * player_vars[idx]
+        for idx in df.index
+    ) <= budget, "Budget_Constraint"
+    
+    # Constraint 2: Select exactly team_size players
+    prob += pulp.lpSum(
+        player_vars[idx]
+        for idx in df.index
+    ) == team_size, "Team_Size_Constraint"
+    
+    # Solve the problem using CBC solver (deterministic and stable)
+    solver = pulp.PULP_CBC_CMD(msg=0)
+    prob.solve(solver)
+    
+    # Check if solution was found
+    if prob.status != pulp.LpStatusOptimal:
+        status_msg = pulp.LpStatus[prob.status]
+        raise ValueError(f"No optimal solution found. Status: {status_msg}")
+    
+    # Extract selected players
+    selected_indices = [
+        idx for idx in df.index
+        if player_vars[idx].varValue == 1
+    ]
+    
+    # Get selected players as list of dicts
+    selected_df = df.loc[selected_indices]
+    players_list = selected_df.to_dict('records')
+    
+    # Calculate totals
+    total_cost = float(selected_df["price"].sum())
+    total_score = float(selected_df["score"].sum())
+    
+    return {
+        "players": players_list,
+        "total_cost": total_cost,
+        "total_score": total_score
+    }
