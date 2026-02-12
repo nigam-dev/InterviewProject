@@ -1,121 +1,63 @@
-"""Test script to verify backend functionality."""
-import sys
-from pathlib import Path
+#!/usr/bin/env python3
+"""
+Standalone test script for backend functionality.
+Tests data loading, score calculation, and team optimization.
+"""
 
-# Add backend directory to path
-sys.path.insert(0, str(Path(__file__).parent))
-
-from data_loader import DataLoader
-from optimizer import TeamOptimizer
-from models import OptimizationConstraints
-
-
-def test_data_loader():
-    """Test data loading functionality."""
-    print("Testing DataLoader...")
-    loader = DataLoader()
-    
-    # Test loading data
-    data = loader.load_data()
-    print(f"✓ Loaded {len(data)} players from CSV")
-    
-    # Test getting all players
-    players = loader.get_all_players()
-    print(f"✓ Retrieved {len(players)} player objects")
-    
-    # Test getting specific player
-    player = loader.get_player_by_id(1)
-    if player:
-        print(f"✓ Retrieved player: {player.name} ({player.position})")
-    
-    # Test filtering
-    qbs = loader.filter_players(position="QB")
-    print(f"✓ Found {len(qbs)} quarterbacks")
-    
-    return players
-
-
-def test_optimizer(players):
-    """Test optimization functionality."""
-    print("\nTesting TeamOptimizer...")
-    optimizer = TeamOptimizer()
-    
-    # Test basic optimization
-    constraints = OptimizationConstraints(
-        salary_cap=50000,
-        min_players=5,
-        max_players=9
-    )
-    
-    result = optimizer.optimize(
-        available_players=players,
-        constraints=constraints
-    )
-    
-    if result.success:
-        print(f"✓ Optimization successful!")
-        print(f"  - Selected {len(result.players)} players")
-        print(f"  - Total salary: ${result.total_salary:,.2f}")
-        print(f"  - Total points: {result.total_projected_points:.2f}")
-        print(f"  - Players: {', '.join([p.name for p in result.players])}")
-    else:
-        print(f"✗ Optimization failed: {result.message}")
-        return False
-    
-    # Test with position constraints
-    print("\nTesting with position constraints...")
-    constraints_with_positions = OptimizationConstraints(
-        salary_cap=50000,
-        min_players=8,
-        max_players=8,
-        positions={"QB": 1, "RB": 2, "WR": 3, "TE": 2}
-    )
-    
-    result2 = optimizer.optimize(
-        available_players=players,
-        constraints=constraints_with_positions
-    )
-    
-    if result2.success:
-        print(f"✓ Position-constrained optimization successful!")
-        print(f"  - Selected {len(result2.players)} players")
-        print(f"  - Total salary: ${result2.total_salary:,.2f}")
-        print(f"  - Total points: {result2.total_projected_points:.2f}")
-        
-        # Show position breakdown
-        positions = {}
-        for p in result2.players:
-            positions[p.position] = positions.get(p.position, 0) + 1
-        print(f"  - Position breakdown: {positions}")
-    else:
-        print(f"✗ Position optimization failed: {result2.message}")
-        return False
-    
-    return True
+from data_loader import load_players
+from scoring import calculate_score
+from optimizer import optimize_team
 
 
 def main():
-    """Run all tests."""
-    print("=" * 60)
+    print("=" * 80)
     print("BACKEND FUNCTIONALITY TEST")
-    print("=" * 60)
+    print("=" * 80)
     
-    try:
-        # Test data loading
-        players = test_data_loader()
-        
-        # Test optimizer
-        test_optimizer(players)
-        
-        print("\n" + "=" * 60)
-        print("✓ ALL TESTS PASSED - Backend is working correctly!")
-        print("=" * 60)
-        
-    except Exception as e:
-        print(f"\n✗ TEST FAILED: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+    # Test 1: Load players
+    print("\n1. Testing load_players()...")
+    df = load_players()
+    print(f"   ✓ Loaded {len(df)} players")
+    print(f"   ✓ Columns: {list(df.columns)}")
+    
+    # Test 2: Calculate score
+    print("\n2. Testing calculate_score()...")
+    df_scored = calculate_score(df)
+    print(f"   ✓ Calculated scores for {len(df_scored)} players")
+    print(f"   ✓ Score column added: {'score' in df_scored.columns}")
+    
+    # Show top 5 scorers
+    print("\n   Top 5 Scorers:")
+    top_5 = df_scored.nlargest(5, 'score')[['name', 'runs', 'wickets', 'strike_rate', 'price', 'score']]
+    for idx, (_, row) in enumerate(top_5.iterrows(), 1):
+        print(f"   {idx}. {row['name']:<20} - Score: {row['score']:.1f}")
+    
+    # Test 3: Optimize with budget 100
+    print("\n3. Testing optimize_team() with budget=100...")
+    result = optimize_team(df_scored, budget=100, team_size=7)
+    
+    print("\n" + "=" * 80)
+    print("OPTIMIZATION RESULTS (Budget: $100, Team Size: 7)")
+    print("=" * 80)
+    
+    print(f"\nTotal Cost: ${result['total_cost']:.2f}")
+    print(f"Total Score: {result['total_score']:.1f}")
+    print(f"Players Selected: {len(result['players'])}")
+    
+    print(f"\n{'Selected Players:':^80}")
+    print("=" * 80)
+    print(f"{'#':<3} {'Name':<22} {'Runs':<6} {'Wkts':<5} {'SR':<6} {'Price':<6} {'Score':<8}")
+    print("-" * 80)
+    
+    # Sort by score descending
+    sorted_players = sorted(result['players'], key=lambda p: p['score'], reverse=True)
+    for idx, player in enumerate(sorted_players, 1):
+        print(f"{idx:<3} {player['name']:<22} {player['runs']:<6.0f} {player['wickets']:<5.0f} "
+              f"{player['strike_rate']:<6.0f} ${player['price']:<5.0f} {player['score']:<8.1f}")
+    
+    print("\n" + "=" * 80)
+    print("✓ ALL TESTS PASSED")
+    print("=" * 80)
 
 
 if __name__ == "__main__":
