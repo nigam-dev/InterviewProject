@@ -1,95 +1,78 @@
 import pandas as pd
 from pathlib import Path
-from typing import List
-from models import Player
 
 
-class DataLoader:
-    """Handles loading and processing player data."""
+def load_players(csv_path: str = "players.csv") -> pd.DataFrame:
+    """
+    Load player data from CSV file.
     
-    def __init__(self, csv_path: str = "players.csv"):
-        """Initialize data loader with CSV path."""
-        self.csv_path = Path(csv_path)
-        self._data: pd.DataFrame | None = None
+    Args:
+        csv_path: Path to the CSV file containing player data
+        
+    Returns:
+        pd.DataFrame: Validated player data with proper types
+        
+    Raises:
+        FileNotFoundError: If CSV file doesn't exist
+        ValueError: If required columns are missing or data is invalid
+    """
+    csv_file = Path(csv_path)
     
-    def load_data(self) -> pd.DataFrame:
-        """Load player data from CSV file."""
-        if not self.csv_path.exists():
-            raise FileNotFoundError(f"Player data file not found: {self.csv_path}")
-        
-        self._data = pd.read_csv(self.csv_path)
-        
-        # Validate required columns
-        required_columns = ["id", "name", "position", "salary", "projected_points", "team"]
-        missing_columns = set(required_columns) - set(self._data.columns)
-        
-        if missing_columns:
-            raise ValueError(f"Missing required columns: {missing_columns}")
-        
-        return self._data
+    # Check if file exists
+    if not csv_file.exists():
+        raise FileNotFoundError(f"Player data file not found: {csv_path}")
     
-    def get_all_players(self) -> List[Player]:
-        """Get all players as list of Player models."""
-        if self._data is None:
-            self.load_data()
-        
-        players = []
-        for _, row in self._data.iterrows():
-            player = Player(
-                id=int(row["id"]),
-                name=str(row["name"]),
-                position=str(row["position"]),
-                salary=float(row["salary"]),
-                projected_points=float(row["projected_points"]),
-                team=str(row["team"])
-            )
-            players.append(player)
-        
-        return players
+    # Load CSV
+    try:
+        df = pd.read_csv(csv_file)
+    except Exception as e:
+        raise ValueError(f"Error reading CSV file: {str(e)}")
     
-    def get_player_by_id(self, player_id: int) -> Player | None:
-        """Get a specific player by ID."""
-        if self._data is None:
-            self.load_data()
-        
-        player_row = self._data[self._data["id"] == player_id]
-        
-        if player_row.empty:
-            return None
-        
-        row = player_row.iloc[0]
-        return Player(
-            id=int(row["id"]),
-            name=str(row["name"]),
-            position=str(row["position"]),
-            salary=float(row["salary"]),
-            projected_points=float(row["projected_points"]),
-            team=str(row["team"])
-        )
+    # Validate required columns
+    required_columns = ["name", "runs", "wickets", "strike_rate", "price"]
+    missing_columns = set(required_columns) - set(df.columns)
     
-    def filter_players(self, position: str | None = None, max_salary: float | None = None) -> List[Player]:
-        """Filter players by position and/or salary."""
-        if self._data is None:
-            self.load_data()
-        
-        filtered = self._data.copy()
-        
-        if position:
-            filtered = filtered[filtered["position"] == position]
-        
-        if max_salary is not None:
-            filtered = filtered[filtered["salary"] <= max_salary]
-        
-        players = []
-        for _, row in filtered.iterrows():
-            player = Player(
-                id=int(row["id"]),
-                name=str(row["name"]),
-                position=str(row["position"]),
-                salary=float(row["salary"]),
-                projected_points=float(row["projected_points"]),
-                team=str(row["team"])
-            )
-            players.append(player)
-        
-        return players
+    if missing_columns:
+        raise ValueError(f"Missing required columns: {missing_columns}")
+    
+    # Check for empty dataframe
+    if df.empty:
+        raise ValueError("CSV file is empty")
+    
+    # Ensure numeric types for numeric columns
+    numeric_columns = ["runs", "wickets", "strike_rate", "price"]
+    
+    for col in numeric_columns:
+        try:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+        except Exception as e:
+            raise ValueError(f"Error converting column '{col}' to numeric: {str(e)}")
+    
+    # Check for missing values after conversion
+    if df[numeric_columns].isnull().any().any():
+        null_counts = df[numeric_columns].isnull().sum()
+        null_cols = null_counts[null_counts > 0].to_dict()
+        raise ValueError(f"Invalid numeric values found in columns: {null_cols}")
+    
+    # Ensure name is string type
+    df["name"] = df["name"].astype(str)
+    
+    # Validate data ranges
+    if (df["runs"] < 0).any() or (df["runs"] > 1000).any():
+        raise ValueError("Runs must be between 0 and 1000")
+    
+    if (df["wickets"] < 0).any() or (df["wickets"] > 50).any():
+        raise ValueError("Wickets must be between 0 and 50")
+    
+    if (df["strike_rate"] < 0).any() or (df["strike_rate"] > 250).any():
+        raise ValueError("Strike rate must be between 0 and 250")
+    
+    if (df["price"] <= 0).any() or (df["price"] > 100).any():
+        raise ValueError("Price must be between 0 and 100")
+    
+    # Check for duplicate player names
+    if df["name"].duplicated().any():
+        duplicates = df[df["name"].duplicated()]["name"].tolist()
+        raise ValueError(f"Duplicate player names found: {duplicates}")
+    
+    return df
