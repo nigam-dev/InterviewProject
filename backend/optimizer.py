@@ -1,15 +1,10 @@
 from typing import List, Set
 import pulp
 from models import Player, OptimizationConstraints, OptimizedTeam
-from scoring import ScoringEngine
 
 
 class TeamOptimizer:
     """Handles cricket team optimization using linear programming."""
-    
-    def __init__(self):
-        """Initialize the optimizer."""
-        self.scoring_engine = ScoringEngine()
     
     def optimize(
         self,
@@ -102,10 +97,10 @@ class TeamOptimizer:
         ]
         
         # Calculate totals
-        total_price = self.scoring_engine.calculate_total_price(selected_players)
-        total_runs = self.scoring_engine.calculate_total_runs(selected_players)
-        total_wickets = self.scoring_engine.calculate_total_wickets(selected_players)
-        avg_sr = self.scoring_engine.calculate_avg_strike_rate(selected_players)
+        total_price = sum(p.price for p in selected_players)
+        total_runs = sum(p.runs for p in selected_players)
+        total_wickets = sum(p.wickets for p in selected_players)
+        avg_sr = sum(p.strike_rate for p in selected_players) / len(selected_players) if selected_players else 0.0
         
         return OptimizedTeam(
             players=selected_players,
