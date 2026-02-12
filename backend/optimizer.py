@@ -1,12 +1,13 @@
 import pandas as pd
 import pulp
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 
 def optimize_team(
     df: pd.DataFrame,
     budget: int,
-    team_size: int = 11
+    team_size: int = 11,
+    role_constraints: Optional[Dict[str, int]] = None
 ) -> Dict[str, Any]:
     """
     Optimize cricket team selection using Linear Programming.
@@ -17,16 +18,14 @@ def optimize_team(
     Constraints:
         - sum(price) <= budget
         - select exactly team_size players
-        - Role-based constraints:
-            * Exactly 1 WK (Wicketkeeper)
-            * Exactly 4 BAT (Batsman)
-            * Exactly 3 BOWL (Bowler)
-            * Exactly 3 ALL (All-rounder)
+        - Role-based constraints (customizable via role_constraints parameter)
     
     Args:
         df: DataFrame with columns: name, price, score, role
         budget: Maximum budget allowed
         team_size: Number of players to select (default: 11)
+        role_constraints: Dict mapping role names to required counts (default: {"WK": 1, "BAT": 4, "BOWL": 3, "ALL": 3})
+                         Example: {"WK": 1, "BAT": 5, "BOWL": 2, "ALL": 3}
     
     Returns:
         Dict containing:
@@ -37,6 +36,14 @@ def optimize_team(
     Raises:
         ValueError: If required columns are missing or no feasible solution exists
     """
+    # Set default role constraints if not provided
+    if role_constraints is None:
+        role_constraints = {
+            "WK": 1,
+            "BAT": 4,
+            "BOWL": 3,
+            "ALL": 3
+        }
     # Validate required columns
     required_columns = ["name", "price", "score", "role"]
     missing_columns = set(required_columns) - set(df.columns)
@@ -89,34 +96,13 @@ def optimize_team(
         for idx in indices
     ) == team_size, "Team_Size_Constraint"
     
-    # Constraint 3: Role-based constraints
-    # Exactly 1 Wicketkeeper
-    prob += pulp.lpSum(
-        player_vars[idx]
-        for i, idx in enumerate(indices)
-        if roles[i] == "WK"
-    ) == 1, "Wicketkeeper_Constraint"
-    
-    # Exactly 4 Batsmen
-    prob += pulp.lpSum(
-        player_vars[idx]
-        for i, idx in enumerate(indices)
-        if roles[i] == "BAT"
-    ) == 4, "Batsman_Constraint"
-    
-    # Exactly 3 Bowlers
-    prob += pulp.lpSum(
-        player_vars[idx]
-        for i, idx in enumerate(indices)
-        if roles[i] == "BOWL"
-    ) == 3, "Bowler_Constraint"
-    
-    # Exactly 3 All-rounders
-    prob += pulp.lpSum(
-        player_vars[idx]
-        for i, idx in enumerate(indices)
-        if roles[i] == "ALL"
-    ) == 3, "All_Rounder_Constraint"
+    # Constraint 3: Role-based constraints (dynamic)
+    for role, required_count in role_constraints.items():
+        prob += pulp.lpSum(
+            player_vars[idx]
+            for i, idx in enumerate(indices)
+            if roles[i] == role
+        ) == required_count, f"{role}_Constraint"
     
     # Solve the problem using CBC solver (deterministic and stable)
     solver = pulp.PULP_CBC_CMD(msg=0)
