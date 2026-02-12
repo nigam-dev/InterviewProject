@@ -1,31 +1,31 @@
-name,runs,wickets,strike_rate,price
-Virat Kohli,850,0,145,20
-Rohit Sharma,820,2,152,19
-Babar Azam,780,0,138,18
-Kane Williamson,750,1,125,17
-Jos Buttler,680,0,165,18
-AB de Villiers,720,0,158,19
-David Warner,730,0,148,16
-Steve Smith,760,1,130,17
-Ben Stokes,540,18,142,19
-Rashid Khan,120,28,135,16
-Jasprit Bumrah,45,26,110,15
-Mitchell Starc,85,24,118,14
-Kagiso Rabada,60,25,108,15
-Trent Boult,78,23,115,14
-Shakib Al Hasan,520,22,128,17
-Glenn Maxwell,480,12,155,16
-Andre Russell,420,15,172,17
-Hardik Pandya,450,16,148,16
-Ravindra Jadeja,380,20,125,15
-Suryakumar Yadav,620,1,178,16
-Quinton de Kock,690,0,142,15
-KL Rahul,710,0,135,16
-Jonny Bairstow,650,0,138,15
-Rishabh Pant,580,0,152,15
-Mohammad Rizwan,640,0,128,14
-Jofra Archer,55,21,120,13
-Pat Cummins,92,22,112,14
-Yuzvendra Chahal,25,24,105,12
-Sunil Narine,180,19,155,13
-Chris Gayle,560,8,168,14
+name,runs,wickets,strike_rate,price,role
+Virat Kohli,850,0,145,20,BAT
+Rohit Sharma,820,2,152,19,BAT
+Babar Azam,780,0,138,18,BAT
+Kane Williamson,750,1,125,17,BAT
+Jos Buttler,680,0,165,18,WK
+AB de Villiers,720,0,158,19,WK
+David Warner,730,0,148,16,BAT
+Steve Smith,760,1,130,17,BAT
+Ben Stokes,540,18,142,19,ALL
+Rashid Khan,120,28,135,16,BOWL
+Jasprit Bumrah,45,26,110,15,BOWL
+Mitchell Starc,85,24,118,14,BOWL
+Kagiso Rabada,60,25,108,15,BOWL
+Trent Boult,78,23,115,14,BOWL
+Shakib Al Hasan,520,22,128,17,ALL
+Glenn Maxwell,480,12,155,16,ALL
+Andre Russell,420,15,172,17,ALL
+Hardik Pandya,450,16,148,16,ALL
+Ravindra Jadeja,380,20,125,15,ALL
+Suryakumar Yadav,620,1,178,16,BAT
+Quinton de Kock,690,0,142,15,WK
+KL Rahul,710,0,135,16,WK
+Jonny Bairstow,650,0,138,15,WK
+Rishabh Pant,580,0,152,15,WK
+Mohammad Rizwan,640,0,128,14,WK
+Jofra Archer,55,21,120,13,BOWL
+Pat Cummins,92,22,112,14,BOWL
+Yuzvendra Chahal,25,24,105,12,BOWL
+Sunil Narine,180,19,155,13,ALL
+Chris Gayle,560,8,168,14,BAT

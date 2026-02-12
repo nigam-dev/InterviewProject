@@ -31,14 +31,15 @@ def load_players(csv_path: str = "players.csv") -> pd.DataFrame:
                 "runs": "Int64",
                 "wickets": "Int64",
                 "strike_rate": float,
-                "price": float
+                "price": float,
+                "role": str
             }
         )
     except Exception as e:
         raise ValueError(f"Error reading CSV file: {str(e)}")
     
     # Validate required columns
-    required_columns = ["name", "runs", "wickets", "strike_rate", "price"]
+    required_columns = ["name", "runs", "wickets", "strike_rate", "price", "role"]
     missing_columns = set(required_columns) - set(df.columns)
     
     if missing_columns:
@@ -78,5 +79,11 @@ def load_players(csv_path: str = "players.csv") -> pd.DataFrame:
     if df["name"].duplicated().any():
         duplicates = df[df["name"].duplicated()]["name"].tolist()
         raise ValueError(f"Duplicate player names found: {duplicates}")
+    
+    # Validate role values
+    allowed_roles = {"BAT", "BOWL", "ALL", "WK"}
+    invalid_roles = set(df["role"].unique()) - allowed_roles
+    if invalid_roles:
+        raise ValueError(f"Invalid role values found: {invalid_roles}. Allowed roles: {allowed_roles}")
     
     return df

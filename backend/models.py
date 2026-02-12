@@ -15,6 +15,7 @@ class PlayerResponse(BaseModel):
     wickets: int
     strike_rate: float
     price: float
+    role: str
     score: float
 
 
