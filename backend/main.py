@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 import pandas as pd
 from models import BudgetRequest, PlayerResponse, OptimizeResponse
-from data_loader import load_players
+from player_repository import load_players, get_data_source
+from database import init_database, close_database
 from scoring import calculate_score
 from optimizer import optimize_team
 from validator import validate_optimization_inputs, ValidationError
@@ -34,6 +35,24 @@ app.add_middleware(
 _cached_players_df: pd.DataFrame = None
 
 
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database connection on startup"""
+    print("Initializing database connection...")
+    db_available = init_database()
+    if db_available:
+        print("✓ Database initialized successfully")
+    else:
+        print("⚠ Database unavailable, using CSV fallback")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close database connections on shutdown"""
+    print("Closing database connections...")
+    close_database()
+
+
 def get_players_data() -> pd.DataFrame:
     """Get cached player data, loading if necessary."""
     global _cached_players_df
@@ -41,6 +60,23 @@ def get_players_data() -> pd.DataFrame:
         df = load_players()
         _cached_players_df = calculate_score(df)
     return _cached_players_df
+
+
+@app.get("/")
+async def root():
+    """
+    API root endpoint with health check.
+    
+    Returns:
+        API info and data source status
+    """
+    data_source = get_data_source()
+    return {
+        "message": "Cricket Team Optimizer API",
+        "version": "1.0.0",
+        "data_source": data_source,
+        "endpoints": ["/players", "/optimize"]
+    }
 
 
 @app.get("/players", response_model=List[PlayerResponse])
