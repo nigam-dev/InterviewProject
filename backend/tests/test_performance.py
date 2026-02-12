@@ -1,5 +1,11 @@
 """Test backend performance optimizations."""
+import sys
+from pathlib import Path
 import time
+
+# Add parent directory to path to import backend modules
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from data_loader import load_players
 from scoring import calculate_score
 from optimizer import optimize_team
