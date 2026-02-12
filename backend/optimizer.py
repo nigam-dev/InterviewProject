@@ -51,31 +51,36 @@ def optimize_team(
     if budget <= 0:
         raise ValueError(f"budget must be positive, got {budget}")
     
+    # Extract numpy arrays for faster access (avoids repeated .loc[] calls)
+    indices = df.index.tolist()
+    scores = df["score"].values
+    prices = df["price"].values
+    
     # Create optimization problem
     prob = pulp.LpProblem("Cricket_Team_Optimization", pulp.LpMaximize)
     
     # Create binary decision variables for each player
-    # Use player index to ensure deterministic behavior
-    player_vars = {}
-    for idx in df.index:
-        player_vars[idx] = pulp.LpVariable(f"player_{idx}", cat="Binary")
+    player_vars = {
+        idx: pulp.LpVariable(f"player_{idx}", cat="Binary")
+        for idx in indices
+    }
     
-    # Objective: Maximize total score
+    # Objective: Maximize total score (using pre-extracted arrays)
     prob += pulp.lpSum(
-        df.loc[idx, "score"] * player_vars[idx]
-        for idx in df.index
+        scores[i] * player_vars[idx]
+        for i, idx in enumerate(indices)
     ), "Total_Score"
     
-    # Constraint 1: Total price <= budget
+    # Constraint 1: Total price <= budget (using pre-extracted arrays)
     prob += pulp.lpSum(
-        df.loc[idx, "price"] * player_vars[idx]
-        for idx in df.index
+        prices[i] * player_vars[idx]
+        for i, idx in enumerate(indices)
     ) <= budget, "Budget_Constraint"
     
     # Constraint 2: Select exactly team_size players
     prob += pulp.lpSum(
         player_vars[idx]
-        for idx in df.index
+        for idx in indices
     ) == team_size, "Team_Size_Constraint"
     
     # Solve the problem using CBC solver (deterministic and stable)

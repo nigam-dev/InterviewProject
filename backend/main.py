@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
+import pandas as pd
 from models import BudgetRequest, PlayerResponse, OptimizeResponse
 from data_loader import load_players
 from scoring import calculate_score
@@ -23,6 +24,18 @@ app.add_middleware(
     max_age=3600,
 )
 
+# Cache: Load and score players once at startup
+_cached_players_df: pd.DataFrame = None
+
+
+def get_players_data() -> pd.DataFrame:
+    """Get cached player data, loading if necessary."""
+    global _cached_players_df
+    if _cached_players_df is None:
+        df = load_players()
+        _cached_players_df = calculate_score(df)
+    return _cached_players_df
+
 
 @app.get("/players", response_model=List[PlayerResponse])
 async def get_all_players():
@@ -33,23 +46,13 @@ async def get_all_players():
         List of all players with scores
     """
     try:
-        # Load data
-        df = load_players()
+        # Get cached data
+        df_scored = get_players_data()
         
-        # Calculate scores
-        df_scored = calculate_score(df)
-        
-        # Convert to response models
+        # Convert to response models (fast: to_dict('records') vs iterrows)
         players = [
-            PlayerResponse(
-                name=str(row["name"]),
-                runs=int(row["runs"]),
-                wickets=int(row["wickets"]),
-                strike_rate=float(row["strike_rate"]),
-                price=float(row["price"]),
-                score=float(row["score"])
-            )
-            for _, row in df_scored.iterrows()
+            PlayerResponse(**record)
+            for record in df_scored.to_dict('records')
         ]
         
         return players
@@ -73,11 +76,8 @@ async def optimize_team_endpoint(request: BudgetRequest):
         Optimized team with selected players and totals
     """
     try:
-        # Load data
-        df = load_players()
-        
-        # Calculate score
-        df_scored = calculate_score(df)
+        # Get cached data
+        df_scored = get_players_data()
         
         # Optimize team
         result = optimize_team(
@@ -86,16 +86,9 @@ async def optimize_team_endpoint(request: BudgetRequest):
             team_size=request.team_size
         )
         
-        # Convert to response format
+        # Convert to response format (fast: dict unpacking)
         selected_players = [
-            PlayerResponse(
-                name=p["name"],
-                runs=int(p["runs"]),
-                wickets=int(p["wickets"]),
-                strike_rate=float(p["strike_rate"]),
-                price=float(p["price"]),
-                score=float(p["score"])
-            )
+            PlayerResponse(**p)
             for p in result["players"]
         ]
         
