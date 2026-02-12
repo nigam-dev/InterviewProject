@@ -21,8 +21,8 @@ export default function PlayerTable({ players }) {
             </tr>
           </thead>
           <tbody>
-            {players.map((player, index) => (
-              <tr key={index}>
+            {players.map((player) => (
+              <tr key={player.name}>
                 <td className="player-name">{player.name}</td>
                 <td>{player.runs}</td>
                 <td>{player.wickets}</td>

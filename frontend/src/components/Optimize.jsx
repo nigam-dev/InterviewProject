@@ -7,6 +7,7 @@ export default function Optimize() {
   const [optimizedTeam, setOptimizedTeam] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [usedBudget, setUsedBudget] = useState(null);
 
   const handleOptimize = async (e) => {
     e.preventDefault();
@@ -14,14 +15,22 @@ export default function Optimize() {
     try {
       setLoading(true);
       setError(null);
-      const result = await optimizeTeam(budget);
+      const currentBudget = budget;
+      const result = await optimizeTeam(currentBudget);
       setOptimizedTeam(result);
+      setUsedBudget(currentBudget);
     } catch (err) {
       setError(err.message);
       setOptimizedTeam(null);
+      setUsedBudget(null);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBudgetChange = (value) => {
+    setBudget(value);
+    setError(null);
   };
 
   return (
@@ -39,14 +48,14 @@ export default function Optimize() {
             min="50"
             max="250"
             value={budget}
-            onChange={(e) => setBudget(Number(e.target.value))}
+            onChange={(e) => handleBudgetChange(Number(e.target.value))}
           />
           <input
             type="number"
             min="50"
             max="250"
             value={budget}
-            onChange={(e) => setBudget(Number(e.target.value))}
+            onChange={(e) => handleBudgetChange(Number(e.target.value))}
             className="budget-input"
           />
         </div>
@@ -81,7 +90,7 @@ export default function Optimize() {
               </div>
               <div className="stat">
                 <span className="stat-label">Budget Remaining:</span>
-                <span className="stat-value">${(budget - optimizedTeam.total_cost).toFixed(2)}</span>
+                <span className="stat-value">${(usedBudget - optimizedTeam.total_cost).toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -101,10 +110,10 @@ export default function Optimize() {
                 </tr>
               </thead>
               <tbody>
-                {optimizedTeam.players
+                {[...optimizedTeam.players]
                   .sort((a, b) => b.score - a.score)
                   .map((player, index) => (
-                    <tr key={index}>
+                    <tr key={player.name}>
                       <td>{index + 1}</td>
                       <td className="player-name">{player.name}</td>
                       <td>{player.runs}</td>

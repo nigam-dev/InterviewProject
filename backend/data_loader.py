@@ -68,7 +68,7 @@ def load_players(csv_path: str = "players.csv") -> pd.DataFrame:
         raise ValueError("Strike rate must be between 0 and 250")
     
     if (df["price"] <= 0).any() or (df["price"] > 100).any():
-        raise ValueError("Price must be between 0 and 100")
+        raise ValueError("Price must be greater than 0 and at most 100")
     
     # Check for duplicate player names
     if df["name"].duplicated().any():
