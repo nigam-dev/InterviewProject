@@ -8,6 +8,7 @@ from database import init_database, close_database
 from scoring import calculate_score
 from optimizer import optimize_team
 from validator import validate_optimization_inputs, ValidationError
+from cache import optimization_cache
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -21,6 +22,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",  # Vite dev server
+        "http://localhost:5174",  # Vite dev server fallback
         "http://localhost:3000",  # Alternative dev port
         "http://localhost",       # Docker frontend
         "http://localhost:80",    # Docker frontend explicit
@@ -121,6 +123,16 @@ async def optimize_team_endpoint(request: BudgetRequest):
         # Get cached data
         df_scored = get_players_data()
         
+        # Check cache explicitly
+        cache_key = optimization_cache.get_cache_key(
+            budget=request.budget,
+            team_size=request.team_size,
+            df=df_scored
+        )
+        cached_result = optimization_cache.get(cache_key)
+        if cached_result:
+            return cached_result
+        
         # Validate inputs before optimization
         validate_optimization_inputs(
             budget=request.budget,
@@ -140,11 +152,16 @@ async def optimize_team_endpoint(request: BudgetRequest):
             for p in result["players"]
         ]
         
-        return OptimizeResponse(
+        response = OptimizeResponse(
             players=selected_players,
             total_cost=result["total_cost"],
             total_score=result["total_score"]
         )
+        
+        # Store in cache
+        optimization_cache.set(cache_key, response)
+        
+        return response
         
     except ValidationError as e:
         # Handle validation errors with 400 Bad Request
