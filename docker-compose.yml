@@ -17,7 +17,7 @@ services:
       - ./backend/players.csv:/app/players.csv:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/players', timeout=5)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/players', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
