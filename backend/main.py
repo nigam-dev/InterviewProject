@@ -6,6 +6,7 @@ from models import BudgetRequest, PlayerResponse, OptimizeResponse
 from data_loader import load_players
 from scoring import calculate_score
 from optimizer import optimize_team
+from validator import validate_optimization_inputs, ValidationError
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -84,6 +85,12 @@ async def optimize_team_endpoint(request: BudgetRequest):
         # Get cached data
         df_scored = get_players_data()
         
+        # Validate inputs before optimization
+        validate_optimization_inputs(
+            budget=request.budget,
+            df=df_scored
+        )
+        
         # Optimize team
         result = optimize_team(
             df_scored,
@@ -103,9 +110,14 @@ async def optimize_team_endpoint(request: BudgetRequest):
             total_score=result["total_score"]
         )
         
+    except ValidationError as e:
+        # Handle validation errors with 400 Bad Request
+        raise HTTPException(status_code=400, detail=str(e))
     except ValueError as e:
+        # Handle optimization errors with 400 Bad Request
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        # Handle unexpected errors with 500 Internal Server Error
         raise HTTPException(
             status_code=500,
             detail=f"Optimization error: {str(e)}"
