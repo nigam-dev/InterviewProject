@@ -1,4 +1,5 @@
 import './PlayerTable.css';
+import RoleBadge from './RoleBadge';
 
 export default function PlayerTable({ players }) {
   if (!players || players.length === 0) {
@@ -13,6 +14,7 @@ export default function PlayerTable({ players }) {
           <thead>
             <tr>
               <th>Name</th>
+              <th>Role</th>
               <th>Runs</th>
               <th>Wickets</th>
               <th>Strike Rate</th>
@@ -24,6 +26,7 @@ export default function PlayerTable({ players }) {
             {players.map((player) => (
               <tr key={player.name}>
                 <td className="player-name">{player.name}</td>
+                <td><RoleBadge role={player.role} /></td>
                 <td>{player.runs}</td>
                 <td>{player.wickets}</td>
                 <td>{player.strike_rate.toFixed(1)}</td>

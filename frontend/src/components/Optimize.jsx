@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { optimizeTeam } from '../api';
+import RoleBadge from './RoleBadge';
 import './Optimize.css';
 
 export default function Optimize() {
   const [budget, setBudget] = useState(175);
+  const [strategy, setStrategy] = useState('MAX_SCORE');
   const [optimizedTeam, setOptimizedTeam] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -11,16 +13,18 @@ export default function Optimize() {
 
   const handleOptimize = async (e) => {
     e.preventDefault();
+    if (loading) return;
     
     try {
       setLoading(true);
       setError(null);
       const currentBudget = budget;
-      const result = await optimizeTeam(currentBudget);
+      const result = await optimizeTeam(currentBudget, strategy);
       setOptimizedTeam(result);
       setUsedBudget(currentBudget);
     } catch (err) {
-      setError(err.message);
+      console.error(err);
+      setError(err.message || 'An error occurred during optimization');
       setOptimizedTeam(null);
       setUsedBudget(null);
     } finally {
@@ -30,7 +34,12 @@ export default function Optimize() {
 
   const handleBudgetChange = (value) => {
     setBudget(value);
-    setError(null);
+    // Clear results on input change to avoid confusion
+    if (optimizedTeam) {
+        // Optional: keep results visible but maybe dim them? 
+        // For now, simpler to just clear error
+        setError(null);
+    }
   };
 
   return (
@@ -49,6 +58,7 @@ export default function Optimize() {
             max="250"
             value={budget}
             onChange={(e) => handleBudgetChange(Number(e.target.value))}
+            disabled={loading}
           />
           <input
             type="number"
@@ -57,11 +67,38 @@ export default function Optimize() {
             value={budget}
             onChange={(e) => handleBudgetChange(Number(e.target.value))}
             className="budget-input"
+            disabled={loading}
           />
         </div>
 
+        <div className="form-group">
+            <label htmlFor="strategy">Optimization Strategy:</label>
+            <select 
+                id="strategy" 
+                value={strategy} 
+                onChange={(e) => setStrategy(e.target.value)}
+                className="strategy-select"
+                disabled={loading}
+            >
+                <option value="MAX_SCORE">Maximize Total Score</option>
+                <option value="MAX_SCORE_PER_COST">Maximize Efficient (Score/Cost)</option>
+            </select>
+            <small className="strategy-desc">
+                {strategy === 'MAX_SCORE' 
+                    ? 'Best possible team within budget' 
+                    : 'Best value-for-money players (Efficiency)'}
+            </small>
+        </div>
+
         <button type="submit" disabled={loading} className="optimize-button">
-          {loading ? 'Optimizing...' : 'Optimize Team'}
+          {loading ? (
+            <>
+              <span className="spinner"></span>
+              Optimizing...
+            </>
+          ) : (
+            'Optimize Team'
+          )}
         </button>
       </form>
 
@@ -102,6 +139,7 @@ export default function Optimize() {
                 <tr>
                   <th>#</th>
                   <th>Name</th>
+                  <th>Role</th>
                   <th>Runs</th>
                   <th>Wickets</th>
                   <th>SR</th>
@@ -116,6 +154,7 @@ export default function Optimize() {
                     <tr key={player.name}>
                       <td>{index + 1}</td>
                       <td className="player-name">{player.name}</td>
+                      <td><RoleBadge role={player.role} /></td>
                       <td>{player.runs}</td>
                       <td>{player.wickets}</td>
                       <td>{player.strike_rate.toFixed(1)}</td>
