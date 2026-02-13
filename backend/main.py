@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from typing import List
+import os
 import pandas as pd
 from models import BudgetRequest, PlayerResponse, OptimizeResponse
 from player_repository import load_players, get_data_source
@@ -41,15 +42,24 @@ app = FastAPI(
 )
 
 # Configure CORS
+default_origins = [
+    "http://localhost:5173",  # Vite dev server
+    "http://localhost:5174",  # Vite dev server fallback
+    "http://localhost:3000",  # Alternative dev port
+    "http://localhost",       # Docker frontend
+    "http://localhost:80",    # Docker frontend explicit
+]
+
+# Optional: comma-separated list of allowed origins for production, e.g.
+# CORS_ORIGINS="https://my-app.vercel.app,https://my-api-client.com"
+env_origins_raw = os.getenv("CORS_ORIGINS", "").strip()
+env_origins = [o.strip() for o in env_origins_raw.split(",") if o.strip()] if env_origins_raw else []
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",  # Vite dev server
-        "http://localhost:5174",  # Vite dev server fallback
-        "http://localhost:3000",  # Alternative dev port
-        "http://localhost",       # Docker frontend
-        "http://localhost:80",    # Docker frontend explicit
-    ],
+    allow_origins=[*default_origins, *env_origins],
+    # Allow Vercel preview + production subdomains without listing each one.
+    allow_origin_regex=r"https://.*\\.vercel\\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
