@@ -30,38 +30,50 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>🏏 Cricket Team Optimizer</h1>
-        <p>Build your perfect cricket team within budget constraints</p>
+        <div className="content-container">
+          <h1>🏏 Cricket Team Optimizer</h1>
+          <p>Build your perfect cricket team within budget constraints</p>
+        </div>
       </header>
 
-      <nav className="tabs">
-        <button
-          className={`tab ${activeTab === 'optimize' ? 'active' : ''}`}
-          onClick={() => setActiveTab('optimize')}
-        >
-          Optimize Team
-        </button>
-        <button
-          className={`tab ${activeTab === 'players' ? 'active' : ''}`}
-          onClick={() => setActiveTab('players')}
-        >
-          All Players
-        </button>
+      <nav className="tabs" aria-label="Application sections">
+        <div className="container tabs-inner">
+          <button
+            className={`tab ${activeTab === 'optimize' ? 'active' : ''}`}
+            onClick={() => setActiveTab('optimize')}
+            type="button"
+          >
+            Optimize Team
+          </button>
+          <button
+            className={`tab ${activeTab === 'players' ? 'active' : ''}`}
+            onClick={() => setActiveTab('players')}
+            type="button"
+          >
+            All Players
+          </button>
+        </div>
       </nav>
 
-      <main className="main-content">
-        {loading && <div className="loading">Loading players...</div>}
-        {error && <div className="error">Error: {error}</div>}
-        {!loading && !error && (
-          <>
-            {activeTab === 'optimize' && <Optimize />}
-            {activeTab === 'players' && <PlayerTable players={players} />}
-          </>
-        )}
+      <main className="main" role="main">
+        <div className="main-container">
+          <div className="content-container main-content">
+            {loading && <div className="loading">Loading players...</div>}
+            {error && <div className="error">Error: {error}</div>}
+            {!loading && !error && (
+              <>
+                {activeTab === 'optimize' && <Optimize />}
+                {activeTab === 'players' && <PlayerTable players={players} />}
+              </>
+            )}
+          </div>
+        </div>
       </main>
 
       <footer className="app-footer">
-        <p>Powered by FastAPI + React + PuLP Linear Programming</p>
+        <div className="container">
+          <p>Powered by FastAPI + React + PuLP Linear Programming</p>
+        </div>
       </footer>
     </div>
   );

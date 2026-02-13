@@ -1,5 +1,7 @@
 .player-table-container {
+  width: 100%;
   padding: 20px;
+  box-sizing: border-box;
 }
 
 .player-table-container h2 {
@@ -8,7 +10,13 @@
   font-size: 1.5rem;
 }
 
+.player-table-max {
+  width: 100%;
+  max-width: 100%;
+}
+
 .table-wrapper {
+  width: 100%;
   overflow-x: auto;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
@@ -17,6 +25,7 @@
 
 .player-table {
   width: 100%;
+  min-width: 720px;
   border-collapse: collapse;
 }
 

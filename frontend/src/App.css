@@ -1,3 +1,32 @@
+.app,
+#root,
+html,
+body {
+  width: 100%;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  display: block;
+  place-items: normal;
+  min-height: 100vh;
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+
 .app {
   min-height: 100vh;
   display: flex;
@@ -6,10 +35,15 @@
 }
 
 .app-header {
+  padding: 24px 0;
+  text-align: center;
+}
+
+.app-header .content-container {
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: white;
   padding: 32px 24px;
-  text-align: center;
+  box-sizing: border-box;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -26,11 +60,15 @@
 }
 
 .tabs {
-  display: flex;
   background: white;
   border-bottom: 2px solid #e5e7eb;
-  padding: 0 24px;
+}
+
+.tabs-inner {
+  display: flex;
   gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .tab {
@@ -55,12 +93,29 @@
   border-bottom-color: #2563eb;
 }
 
-.main-content {
+.main {
   flex: 1;
-  padding: 24px;
-  max-width: 1400px;
-  width: 100%;
-  margin: 0 auto;
+}
+
+.main-container
+{
+ display: flex;
+ justify-content: center;
+ width: 100%;
+}
+
+.content-container
+{
+ width: 100%;
+ max-width: 1200px;
+ margin: 0 auto;
+ padding: 24px;
+ box-sizing: border-box;
+}
+
+.main-content {
+  padding: 0;
+  flex: 1;
 }
 
 .loading,
@@ -86,7 +141,7 @@
 .app-footer {
   background: white;
   border-top: 1px solid #e5e7eb;
-  padding: 16px;
+  padding: 16px 0;
   text-align: center;
   color: #6b7280;
   font-size: 14px;
@@ -97,6 +152,10 @@
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding: 0 12px;
+  }
+
   .app-header h1 {
     font-size: 1.75rem;
   }
@@ -106,7 +165,7 @@
   }
   
   .tabs {
-    padding: 0 12px;
+    border-bottom-width: 1px;
   }
   
   .tab {
@@ -115,7 +174,12 @@
   }
   
   .main-content {
-    padding: 12px;
+    padding: 12px 0;
+  }
+
+  .content-container
+  {
+   padding: 12px;
   }
 }
 
