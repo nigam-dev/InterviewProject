@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from data_loader import load_players
+from repositories.data_loader import load_players
 
 def test_load_players_success(tmp_path):
     """Test loading valid player data from CSV."""

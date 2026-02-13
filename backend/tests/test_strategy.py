@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
-from optimizer import optimize_team
-from models import OptimizationStrategy
+from services.optimizer import optimize_team
+from models.schemas import OptimizationStrategy
 
 @pytest.fixture
 def optimization_dataset():

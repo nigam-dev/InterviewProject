@@ -9,9 +9,9 @@ from pathlib import Path
 # Add parent directory to path to import backend modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from data_loader import load_players
-from scoring import calculate_score
-from optimizer import optimize_team
+from repositories.data_loader import load_players
+from services.scoring import calculate_score
+from services.optimizer import optimize_team
 
 
 def main():
@@ -37,12 +37,13 @@ def main():
     for idx, (_, row) in enumerate(top_5.iterrows(), 1):
         print(f"   {idx}. {row['name']:<20} - Score: {row['score']:.1f}")
     
-    # Test 3: Optimize with budget 100
-    print("\n3. Testing optimize_team() with budget=100...")
-    result = optimize_team(df_scored, budget=100, team_size=7)
+    # Test 3: Optimize with budget 175
+    print("\n3. Testing optimize_team() with budget=175, team_size=11...")
+    # Use standard team size and budget
+    result = optimize_team(df_scored, budget=175, team_size=11)
     
     print("\n" + "=" * 80)
-    print("OPTIMIZATION RESULTS (Budget: $100, Team Size: 7)")
+    print("OPTIMIZATION RESULTS (Budget: $175, Team Size: 11)")
     print("=" * 80)
     
     print(f"\nTotal Cost: ${result['total_cost']:.2f}")

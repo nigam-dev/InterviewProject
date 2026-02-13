@@ -1,31 +1,15 @@
 """
 Database connection and models using SQLAlchemy
 """
-from sqlalchemy import create_engine, Column, Integer, String, Float
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from typing import Optional
 import os
-from config import settings
+from .config import settings
 
 # SQLAlchemy base
 Base = declarative_base()
-
-
-class Player(Base):
-    """Player model for database"""
-    __tablename__ = 'players'
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(100), nullable=False, unique=True)
-    runs = Column(Integer, nullable=False)
-    wickets = Column(Integer, nullable=False)
-    strike_rate = Column(Float, nullable=False)
-    price = Column(Float, nullable=False)
-    role = Column(String(10), nullable=False)
-    
-    def __repr__(self):
-        return f"<Player(name='{self.name}', role='{self.role}', price={self.price})>"
 
 
 # Database configuration
@@ -73,6 +57,8 @@ def init_database() -> bool:
             conn.execute(text("SELECT 1"))
         
         # Create tables if they don't exist
+        # Import models so they are registered with Base
+        import models.db  # noqa
         Base.metadata.create_all(bind=_engine)
         
         # Create session factory

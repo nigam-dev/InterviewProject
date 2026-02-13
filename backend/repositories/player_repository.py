@@ -3,9 +3,10 @@ Player repository for loading data from database or CSV
 """
 import pandas as pd
 from typing import Optional
-from database import Player, get_session, is_database_available, init_database
-from data_loader import load_players as load_players_from_csv
-from logger import get_logger
+from models.db import Player
+from core.database import get_session, is_database_available, init_database
+from .data_loader import load_players as load_players_from_csv
+from core.logger import get_logger
 
 logger = get_logger(__name__)
 

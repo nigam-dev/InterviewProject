@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import Dict, Any, Optional
-from config import settings
+from core.config import settings
 
 class OptimizationCache:
     def __init__(self):

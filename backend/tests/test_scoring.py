@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from scoring import calculate_score
+from services.scoring import calculate_score
 
 @pytest.fixture
 def sample_player_df():

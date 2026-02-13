@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { optimizeTeam } from '../api';
+import { optimizeTeam } from '../services/api';
 import RoleBadge from './RoleBadge';
 import './Optimize.css';
 
