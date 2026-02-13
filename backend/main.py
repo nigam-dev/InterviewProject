@@ -66,7 +66,13 @@ def get_players_data() -> pd.DataFrame:
     global _cached_players_df
     if _cached_players_df is None:
         df = load_players()
-        _cached_players_df = calculate_score(df)
+        df_scored = calculate_score(df)
+        # Ensure a stable integer id column exists for filtering and UI selection.
+        # CSV data does not include IDs; we generate them deterministically.
+        if "id" not in df_scored.columns:
+            df_scored = df_scored.reset_index(drop=True)
+            df_scored.insert(0, "id", range(1, len(df_scored) + 1))
+        _cached_players_df = df_scored
     return _cached_players_df
 
 
@@ -128,17 +134,30 @@ async def optimize_team_endpoint(request: BudgetRequest):
     Returns:
         Optimized team with selected players and totals
     """
-    logger.info(f"Optimization request: budget={request.budget}, team_size={request.team_size}")
+    ids_count = len(request.player_ids) if request.player_ids else 0
+    logger.info(
+        f"Optimization request: budget={request.budget}, team_size={request.team_size}, player_ids={ids_count}"
+    )
     try:
         # Get cached data
         df_scored = get_players_data()
+
+        # Optionally restrict optimization pool to selected players
+        df_pool = df_scored
+        if request.player_ids:
+            requested_ids = set(request.player_ids)
+            available_ids = set(df_scored["id"].astype(int).tolist())
+            missing_ids = sorted(requested_ids - available_ids)
+            if missing_ids:
+                raise ValidationError(f"Unknown player_ids: {missing_ids}")
+            df_pool = df_scored[df_scored["id"].isin(request.player_ids)]
         
         # Check cache explicitly
         cache_key = optimization_cache.get_cache_key(
             budget=request.budget,
             team_size=request.team_size,
             strategy=str(request.strategy),
-            df=df_scored
+            df=df_pool
         )
         cached_result = optimization_cache.get(cache_key)
         if cached_result:
@@ -148,12 +167,12 @@ async def optimize_team_endpoint(request: BudgetRequest):
         # Validate inputs before optimization
         validate_optimization_inputs(
             budget=request.budget,
-            df=df_scored
+            df=df_pool
         )
         
         # Optimize team
         result = optimize_team(
-            df_scored,
+            df_pool,
             budget=request.budget,
             team_size=request.team_size,
             strategy=request.strategy

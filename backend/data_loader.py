@@ -32,6 +32,7 @@ def load_players(csv_path: str = "players.csv") -> pd.DataFrame:
         df = pd.read_csv(
             csv_file,
             dtype={
+                "id": "Int64",
                 "name": str,
                 "runs": "Int64",
                 "wickets": "Int64",
@@ -51,11 +52,26 @@ def load_players(csv_path: str = "players.csv") -> pd.DataFrame:
     if missing_columns:
         logger.error(f"Missing required columns: {missing_columns}")
         raise ValueError(f"Missing required columns: {missing_columns}")
+
+    # Backward compatibility: if id is missing, generate stable sequential ids
+    if "id" not in df.columns:
+        logger.warning("CSV is missing 'id' column. Generating sequential ids.")
+        df = df.reset_index(drop=True)
+        df.insert(0, "id", range(1, len(df) + 1))
     
     # Check for empty dataframe
     if df.empty:
         logger.error("CSV file is empty")
         raise ValueError("CSV file is empty")
+
+    # Validate id column: non-null, positive, unique integers
+    if df["id"].isnull().any():
+        raise ValueError("Invalid id values found: null ids are not allowed")
+    if (df["id"] <= 0).any():
+        raise ValueError("Invalid id values found: ids must be positive")
+    if df["id"].duplicated().any():
+        duplicates = df[df["id"].duplicated()]["id"].tolist()
+        raise ValueError(f"Duplicate player ids found: {duplicates}")
     
     # Check for missing values (vectorized, single pass)
     numeric_columns = ["runs", "wickets", "strike_rate", "price"]

@@ -12,6 +12,10 @@ class OptimizationStrategy(str, Enum):
 class BudgetRequest(BaseModel):
     """Request model for optimization."""
     budget: int = Field(gt=0, description="Total budget available")
+    player_ids: Optional[List[int]] = Field(
+        default=None,
+        description="Optional list of player IDs to restrict the optimization pool"
+    )
     team_size: int = Field(default=11, ge=1, le=11, description="Number of players to select")
     strategy: OptimizationStrategy = Field(
         default=OptimizationStrategy.MAX_SCORE,
@@ -21,6 +25,7 @@ class BudgetRequest(BaseModel):
 
 class PlayerResponse(BaseModel):
     """Response model for player data."""
+    id: int
     name: str
     runs: int
     wickets: int
