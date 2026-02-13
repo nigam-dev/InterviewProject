@@ -3,7 +3,7 @@ import { optimizeTeam } from '../api';
 import RoleBadge from './RoleBadge';
 import './Optimize.css';
 
-export default function Optimize() {
+export default function Optimize({ selectedPlayers = [] }) {
   const [budget, setBudget] = useState(175);
   const [strategy, setStrategy] = useState('MAX_SCORE');
   const [optimizedTeam, setOptimizedTeam] = useState(null);
@@ -11,15 +11,24 @@ export default function Optimize() {
   const [error, setError] = useState(null);
   const [usedBudget, setUsedBudget] = useState(null);
 
+  const selectedCount = Array.isArray(selectedPlayers) ? selectedPlayers.length : 0;
+
   const handleOptimize = async (e) => {
     e.preventDefault();
     if (loading) return;
+
+    if (!Array.isArray(selectedPlayers) || selectedPlayers.length < 11) {
+      setError('Select at least 11 players');
+      setOptimizedTeam(null);
+      setUsedBudget(null);
+      return;
+    }
     
     try {
       setLoading(true);
       setError(null);
       const currentBudget = budget;
-      const result = await optimizeTeam(currentBudget, strategy);
+      const result = await optimizeTeam(currentBudget, strategy, selectedPlayers);
       setOptimizedTeam(result);
       setUsedBudget(currentBudget);
     } catch (err) {
@@ -49,6 +58,12 @@ export default function Optimize() {
       <div className="optimize-grid">
         <div>
           <form onSubmit={handleOptimize} className="optimize-form">
+            <div className="selection-summary" aria-live="polite">
+              <span className="selection-label">Selected Pool:</span>
+              <span className="selection-value">{selectedCount} players</span>
+              <span className="selection-hint">(Optimization uses only these selected players)</span>
+            </div>
+
             <div className="form-group">
               <label htmlFor="budget">
                 Budget: ${budget}
@@ -101,7 +116,7 @@ export default function Optimize() {
                   Optimizing...
                 </>
               ) : (
-                'Optimize Team'
+                `Optimize Team (${selectedCount} selected)`
               )}
             </button>
           </form>
@@ -118,12 +133,19 @@ export default function Optimize() {
 
           {!optimizedTeam && (
             <div className="results-empty">
+              <div className="pool-used" aria-label="Selected pool used">
+                Selected pool: <strong>{selectedCount}</strong> players
+              </div>
               Run optimization to see results.
             </div>
           )}
 
           {optimizedTeam && (
             <>
+              <div className="pool-used" aria-label="Selected pool used">
+                Using selected pool of <strong>{selectedCount}</strong> players
+              </div>
+
               <div className="summary-stats">
                 <div className="stat">
                   <span className="stat-label">Total Cost:</span>

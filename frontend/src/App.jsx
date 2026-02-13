@@ -7,6 +7,7 @@ import './App.css';
 function App() {
   const [activeTab, setActiveTab] = useState('optimize');
   const [players, setPlayers] = useState([]);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -62,8 +63,13 @@ function App() {
             {error && <div className="error">Error: {error}</div>}
             {!loading && !error && (
               <>
-                {activeTab === 'optimize' && <Optimize />}
-                {activeTab === 'players' && <PlayerTable players={players} />}
+                {activeTab === 'optimize' && <Optimize selectedPlayers={selectedPlayerIds} />}
+                {activeTab === 'players' && (
+                  <PlayerTable
+                    players={players}
+                    onSelectionChange={setSelectedPlayerIds}
+                  />
+                )}
               </>
             )}
           </div>

@@ -33,13 +33,15 @@ export async function getPlayers() {
  * Optimize team based on budget
  * @param {number} budget - Total budget
  * @param {string} strategy - Optimization strategy (MAX_SCORE or MAX_SCORE_PER_COST)
+ * @param {Array<number>} player_ids - Optional list of player IDs to restrict optimization pool
  * @returns {Promise<Object>} Optimized team with players, total_cost, total_score
  */
-export async function optimizeTeam(budget, strategy = 'MAX_SCORE') {
+export async function optimizeTeam(budget, strategy = 'MAX_SCORE', player_ids = []) {
   try {
     const response = await api.post('/optimize', { 
       budget: parseInt(budget, 10),
-      strategy: strategy
+      strategy: strategy,
+      player_ids: Array.isArray(player_ids) ? player_ids : []
     });
     return response.data;
   } catch (error) {

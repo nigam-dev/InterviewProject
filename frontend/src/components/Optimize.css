@@ -27,6 +27,43 @@
   box-sizing: border-box;
 }
 
+.selection-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.selection-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.selection-value {
+  font-size: 16px;
+  color: #111827;
+  font-weight: 700;
+}
+
+.selection-hint {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.pool-used {
+  padding: 10px 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  color: #374151;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
 .form-group {
   margin-bottom: 20px;
 }
