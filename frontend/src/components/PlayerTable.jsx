@@ -1,10 +1,28 @@
 import './PlayerTable.css';
 import RoleBadge from './RoleBadge';
+import { useEffect, useMemo, useState } from 'react';
 
 export default function PlayerTable({ players }) {
+  const PAGE_SIZE = 25;
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [players]);
+
   if (!players || players.length === 0) {
     return <div className="no-data">No players available</div>;
   }
+
+  const totalPages = Math.max(1, Math.ceil(players.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const startIndex = (safePage - 1) * PAGE_SIZE;
+  const endIndex = startIndex + PAGE_SIZE;
+
+  const pagePlayers = useMemo(() => players.slice(startIndex, endIndex), [players, startIndex, endIndex]);
+
+  const canPrev = safePage > 1;
+  const canNext = safePage < totalPages;
 
   return (
     <div className="player-table-container">
@@ -24,7 +42,7 @@ export default function PlayerTable({ players }) {
               </tr>
             </thead>
             <tbody>
-              {players.map((player) => (
+              {pagePlayers.map((player) => (
                 <tr key={player.name}>
                   <td className="player-name">{player.name}</td>
                   <td><RoleBadge role={player.role} /></td>
@@ -38,6 +56,28 @@ export default function PlayerTable({ players }) {
             </tbody>
           </table>
         </div>
+
+          <div className="pagination" role="navigation" aria-label="Players pagination">
+            <button
+              type="button"
+              className="page-btn"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={!canPrev}
+            >
+              Prev
+            </button>
+            <div className="page-info">
+              Page <strong>{safePage}</strong> of <strong>{totalPages}</strong>
+            </div>
+            <button
+              type="button"
+              className="page-btn"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={!canNext}
+            >
+              Next
+            </button>
+          </div>
       </div>
     </div>
   );

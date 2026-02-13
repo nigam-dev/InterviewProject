@@ -29,6 +29,41 @@
   border-collapse: collapse;
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 4px 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.page-info {
+  color: #374151;
+  font-size: 14px;
+}
+
+.page-btn {
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #111827;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .player-table thead {
   background: #2563eb;
   color: white;
@@ -96,6 +131,12 @@
   
   .player-table-container h2 {
     font-size: 1.25rem;
+  }
+
+  .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    padding-top: 10px;
   }
 }
 
