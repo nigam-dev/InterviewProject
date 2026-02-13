@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from typing import List
@@ -101,6 +101,11 @@ async def root():
         "data_source": data_source,
         "endpoints": ["/players", "/optimize"]
     }
+
+
+@app.head("/")
+async def root_head() -> Response:
+    return Response(status_code=200)
 
 
 @app.get("/players", response_model=List[PlayerResponse])
