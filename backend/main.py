@@ -59,7 +59,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[*default_origins, *env_origins],
     # Allow Vercel preview + production subdomains without listing each one.
-    allow_origin_regex=r"https://.*\\.vercel\\.app$",
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
