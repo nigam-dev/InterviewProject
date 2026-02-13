@@ -35,8 +35,6 @@ def test_players_endpoint():
     # Check role variety
     roles = set(p['role'] for p in players_data)
     print(f"✓ Roles present: {sorted(roles)}")
-    
-    return players_data
 
 
 def test_optimize_endpoint():
@@ -75,8 +73,6 @@ def test_optimize_endpoint():
     print(f"✓ Team composition:")
     for role, count in sorted(team_roles.items()):
         print(f"  - {role}: {count} players")
-    
-    return result
 
 
 if __name__ == "__main__":
@@ -85,10 +81,10 @@ if __name__ == "__main__":
     print("=" * 60)
     
     # Test players endpoint
-    players_data = test_players_endpoint()
+    test_players_endpoint()
     
     # Test optimize endpoint
-    optimize_result = test_optimize_endpoint()
+    test_optimize_endpoint()
     
     print("\n" + "=" * 60)
     print("✓ ALL TESTS PASSED - Role field included in all API responses")

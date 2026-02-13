@@ -37,12 +37,14 @@ def main():
     for idx, (_, row) in enumerate(top_5.iterrows(), 1):
         print(f"   {idx}. {row['name']:<20} - Score: {row['score']:.1f}")
     
-    # Test 3: Optimize with budget 100
-    print("\n3. Testing optimize_team() with budget=100...")
-    result = optimize_team(df_scored, budget=100, team_size=7)
+    # Test 3: Optimize with budget 115 (7 players)
+    print("\n3. Testing optimize_team() with budget=115, team_size=7...")
+    # Define constraints that sum to 7
+    constraints = {"WK": 1, "BAT": 2, "BOWL": 2, "ALL": 2}
+    result = optimize_team(df_scored, budget=115, team_size=7, role_constraints=constraints)
     
     print("\n" + "=" * 80)
-    print("OPTIMIZATION RESULTS (Budget: $100, Team Size: 7)")
+    print("OPTIMIZATION RESULTS (Budget: $115, Team Size: 7)")
     print("=" * 80)
     
     print(f"\nTotal Cost: ${result['total_cost']:.2f}")

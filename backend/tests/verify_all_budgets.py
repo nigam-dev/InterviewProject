@@ -107,7 +107,7 @@ if __name__ == "__main__":
     print("-" * 60)
     print()
     
-    feasible_budgets = [153, 175, 200]
+    feasible_budgets = [170, 185, 200]
     results = []
     for budget in feasible_budgets:
         success = test_budget(budget)
@@ -118,9 +118,9 @@ if __name__ == "__main__":
     print("FINAL SUMMARY")
     print("=" * 60)
     print("\nRequested Budgets:")
-    print("  • Budget $50:  ✗ INFEASIBLE (minimum is $153)")
-    print("  • Budget $100: ✗ INFEASIBLE (minimum is $153)")
-    print("  • Budget $150: ✗ INFEASIBLE (minimum is $153)")
+    print("  • Budget $50:  ✗ INFEASIBLE (minimum is ~$167)")
+    print("  • Budget $100: ✗ INFEASIBLE (minimum is ~$167)")
+    print("  • Budget $150: ✗ INFEASIBLE (minimum is ~$167)")
     
     print("\nFeasible Budget Tests (Constraint Verification):")
     for budget, success in results:

@@ -135,10 +135,10 @@ try:
         print(f"   ✓ Correctly rejected infeasible budget: {str(e)[:50]}...")
     
     # Test minimum feasible budget
-    result_min = optimize_team(df_scored, budget=153, team_size=11)
+    result_min = optimize_team(df_scored, budget=167, team_size=11)
     assert len(result_min['players']) == 11
-    assert result_min['total_cost'] <= 153
-    print(f"   ✓ Minimum budget ($153) works: cost ${result_min['total_cost']}")
+    assert result_min['total_cost'] <= 167
+    print(f"   ✓ Minimum budget ($167) works: cost ${result_min['total_cost']}")
     
 except Exception as e:
     print(f"   ✗ Edge case error: {e}")

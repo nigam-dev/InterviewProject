@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from typing import List
 import pandas as pd
 from models import BudgetRequest, PlayerResponse, OptimizeResponse
@@ -13,11 +14,30 @@ from logger import get_logger
 
 logger = get_logger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Initialize database connection
+    logger.info("Initializing database connection...")
+    db_available = init_database()
+    if db_available:
+        logger.info("✓ Database initialized successfully")
+    else:
+        logger.warning("⚠ Database unavailable, using CSV fallback")
+    
+    yield
+    
+    # Shutdown: Close database connections
+    logger.info("Closing database connections...")
+    close_database()
+
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Cricket Team Optimizer API",
     description="API for optimizing cricket team selection",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Configure CORS
@@ -39,23 +59,6 @@ app.add_middleware(
 # Cache: Load and score players once at startup
 _cached_players_df: pd.DataFrame = None
 
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database connection on startup"""
-    logger.info("Initializing database connection...")
-    db_available = init_database()
-    if db_available:
-        logger.info("✓ Database initialized successfully")
-    else:
-        logger.warning("⚠ Database unavailable, using CSV fallback")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Close database connections on shutdown"""
-    logger.info("Closing database connections...")
-    close_database()
 
 
 def get_players_data() -> pd.DataFrame:
