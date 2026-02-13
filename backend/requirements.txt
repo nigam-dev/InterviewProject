@@ -7,5 +7,4 @@ pydantic==2.5.3
 python-multipart==0.0.6
 sqlalchemy>=2.0.35
 
-# Optional: PostgreSQL support (install if using PostgreSQL)
-# psycopg2-binary==2.9.9
+psycopg2-binary==2.9.9

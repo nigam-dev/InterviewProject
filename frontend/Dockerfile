@@ -21,6 +21,9 @@ RUN npm run build
 # Stage 2: Production
 FROM nginx:alpine
 
+# Healthcheck uses wget; install it in runtime image
+RUN apk add --no-cache wget
+
 # Copy custom nginx config
 COPY nginx_custom.conf /etc/nginx/conf.d/default.conf
 
