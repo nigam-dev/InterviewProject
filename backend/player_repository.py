@@ -5,6 +5,9 @@ import pandas as pd
 from typing import Optional
 from database import Player, get_session, is_database_available, init_database
 from data_loader import load_players as load_players_from_csv
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def sync_csv_to_database(csv_path: str = "players.csv") -> int:
@@ -21,9 +24,12 @@ def sync_csv_to_database(csv_path: str = "players.csv") -> int:
         RuntimeError: If database is not available
     """
     if not is_database_available():
-        raise RuntimeError("Database not available. Cannot sync CSV data.")
+        error_msg = "Database not available. Cannot sync CSV data."
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
     
     # Load players from CSV
+    logger.info(f"Loading players from CSV for sync: {csv_path}")
     df = load_players_from_csv(csv_path)
     
     # Get database session
@@ -48,12 +54,12 @@ def sync_csv_to_database(csv_path: str = "players.csv") -> int:
             session.add(player)
             players_added += 1
         
-        # Commit transaction
-        session.commit()
-        
-        print(f"✓ Synced {players_added} players from CSV to database")
+        logger.info(f"✓ Synced {players_added} players from CSV to database")
         return players_added
         
+    except Exception as e:
+        session.rollback()
+        logger.error
     except Exception as e:
         session.rollback()
         print(f"Error syncing CSV to database: {e}")
@@ -80,7 +86,7 @@ def load_players_from_database() -> Optional[pd.DataFrame]:
         players = session.query(Player).all()
         
         if not players:
-            print("Database is empty. Consider syncing CSV data.")
+            logger.warning("Database is empty. Consider syncing CSV data.")
             return None
         
         # Convert to DataFrame
@@ -107,11 +113,11 @@ def load_players_from_database() -> Optional[pd.DataFrame]:
             'role': str
         })
         
-        print(f"✓ Loaded {len(df)} players from database")
+        logger.info(f"✓ Loaded {len(df)} players from database")
         return df
         
     except Exception as e:
-        print(f"Error loading from database: {e}")
+        logger.error(f"Error loading from database: {e}")
         return None
     finally:
         session.close()
@@ -145,23 +151,23 @@ def load_players(
         df = load_players_from_database()
         
         if df is not None and not df.empty:
-            print("✓ Using database as data source")
+            logger.info("✓ Using database as data source")
             return df
         
         # Database is empty - try to sync from CSV
         if auto_sync:
-            print("Database is empty. Syncing from CSV...")
+            logger.info("Database is empty. Syncing from CSV...")
             try:
                 sync_csv_to_database(csv_path)
                 df = load_players_from_database()
                 if df is not None:
-                    print("✓ Using database as data source (after sync)")
+                    logger.info("✓ Using database as data source (after sync)")
                     return df
             except Exception as e:
-                print(f"Auto-sync failed: {e}. Falling back to CSV.")
+                logger.warning(f"Auto-sync failed: {e}. Falling back to CSV.")
     
     # Fallback to CSV
-    print("✓ Using CSV as data source")
+    logger.info("✓ Using CSV as data source")
     return load_players_from_csv(csv_path)
 
 

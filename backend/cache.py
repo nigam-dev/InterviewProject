@@ -11,11 +11,11 @@ class OptimizationCache:
         # sum() combines the series of hashes into a single value
         return str(pd.util.hash_pandas_object(df).sum())
 
-    def get_cache_key(self, budget: int, team_size: int, df: pd.DataFrame) -> str:
+    def get_cache_key(self, budget: int, team_size: int, df: pd.DataFrame, strategy: str = "MAX_SCORE") -> str:
         """Generate a unique cache key based on inputs."""
         dataset_hash = self._generate_dataset_hash(df)
-        # Create a unique string key combining budget, team size and dataset hash
-        return f"opt:{budget}:{team_size}:{dataset_hash}"
+        # Create a unique string key combining inputs and dataset hash
+        return f"opt:{budget}:{team_size}:{strategy}:{dataset_hash}"
 
     def get(self, key: str) -> Optional[Any]:
         """Retrieve a value from the cache."""

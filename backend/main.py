@@ -9,6 +9,9 @@ from scoring import calculate_score
 from optimizer import optimize_team
 from validator import validate_optimization_inputs, ValidationError
 from cache import optimization_cache
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -40,18 +43,18 @@ _cached_players_df: pd.DataFrame = None
 @app.on_event("startup")
 async def startup_event():
     """Initialize database connection on startup"""
-    print("Initializing database connection...")
+    logger.info("Initializing database connection...")
     db_available = init_database()
     if db_available:
-        print("✓ Database initialized successfully")
+        logger.info("✓ Database initialized successfully")
     else:
-        print("⚠ Database unavailable, using CSV fallback")
+        logger.warning("⚠ Database unavailable, using CSV fallback")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Close database connections on shutdown"""
-    print("Closing database connections...")
+    logger.info("Closing database connections...")
     close_database()
 
 
@@ -89,6 +92,7 @@ async def get_all_players():
     Returns:
         List of all players with scores
     """
+    logger.info("Fetching all players")
     try:
         # Get cached data
         df_scored = get_players_data()
@@ -99,9 +103,11 @@ async def get_all_players():
             for record in df_scored.to_dict('records')
         ]
         
+        logger.info(f"Successfully retrieved {len(players)} players")
         return players
         
     except Exception as e:
+        logger.error(f"Error loading players: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error loading players: {str(e)}"
@@ -119,6 +125,7 @@ async def optimize_team_endpoint(request: BudgetRequest):
     Returns:
         Optimized team with selected players and totals
     """
+    logger.info(f"Optimization request: budget={request.budget}, team_size={request.team_size}")
     try:
         # Get cached data
         df_scored = get_players_data()
@@ -127,10 +134,12 @@ async def optimize_team_endpoint(request: BudgetRequest):
         cache_key = optimization_cache.get_cache_key(
             budget=request.budget,
             team_size=request.team_size,
+            strategy=str(request.strategy),
             df=df_scored
         )
         cached_result = optimization_cache.get(cache_key)
         if cached_result:
+            logger.info("Returning cached optimization result")
             return cached_result
         
         # Validate inputs before optimization
@@ -143,7 +152,8 @@ async def optimize_team_endpoint(request: BudgetRequest):
         result = optimize_team(
             df_scored,
             budget=request.budget,
-            team_size=request.team_size
+            team_size=request.team_size,
+            strategy=request.strategy
         )
         
         # Convert to response format (fast: dict unpacking)
@@ -161,15 +171,19 @@ async def optimize_team_endpoint(request: BudgetRequest):
         # Store in cache
         optimization_cache.set(cache_key, response)
         
+        logger.info(f"Optimization successful: cost={result['total_cost']}, score={result['total_score']}")
         return response
         
     except ValidationError as e:
+        logger.warning(f"Validation error: {str(e)}")
         # Handle validation errors with 400 Bad Request
         raise HTTPException(status_code=400, detail=str(e))
     except ValueError as e:
+        logger.warning(f"Optimization logic error: {str(e)}")
         # Handle optimization errors with 400 Bad Request
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.error(f"Unexpected optimization error: {str(e)}", exc_info=True)
         # Handle unexpected errors with 500 Internal Server Error
         raise HTTPException(
             status_code=500,

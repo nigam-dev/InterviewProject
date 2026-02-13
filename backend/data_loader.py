@@ -1,5 +1,8 @@
 import pandas as pd
 from pathlib import Path
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def load_players(csv_path: str = "players.csv") -> pd.DataFrame:
@@ -20,10 +23,12 @@ def load_players(csv_path: str = "players.csv") -> pd.DataFrame:
     
     # Check if file exists
     if not csv_file.exists():
+        logger.error(f"Player data file not found: {csv_path}")
         raise FileNotFoundError(f"Player data file not found: {csv_path}")
     
     # Load CSV with explicit dtypes for performance (avoids type inference)
     try:
+        logger.info(f"Reading player data from: {csv_path}")
         df = pd.read_csv(
             csv_file,
             dtype={
@@ -36,6 +41,7 @@ def load_players(csv_path: str = "players.csv") -> pd.DataFrame:
             }
         )
     except Exception as e:
+        logger.error(f"Error reading CSV file: {str(e)}")
         raise ValueError(f"Error reading CSV file: {str(e)}")
     
     # Validate required columns
@@ -43,10 +49,12 @@ def load_players(csv_path: str = "players.csv") -> pd.DataFrame:
     missing_columns = set(required_columns) - set(df.columns)
     
     if missing_columns:
+        logger.error(f"Missing required columns: {missing_columns}")
         raise ValueError(f"Missing required columns: {missing_columns}")
     
     # Check for empty dataframe
     if df.empty:
+        logger.error("CSV file is empty")
         raise ValueError("CSV file is empty")
     
     # Check for missing values (vectorized, single pass)

@@ -1,19 +1,24 @@
 import pandas as pd
 import pulp
 from typing import Dict, List, Any, Optional
+from logger import get_logger
+from models import OptimizationStrategy
+
+logger = get_logger(__name__)
 
 
 def optimize_team(
     df: pd.DataFrame,
     budget: int,
     team_size: int = 11,
-    role_constraints: Optional[Dict[str, int]] = None
+    role_constraints: Optional[Dict[str, int]] = None,
+    strategy: OptimizationStrategy = OptimizationStrategy.MAX_SCORE
 ) -> Dict[str, Any]:
     """
     Optimize cricket team selection using Linear Programming.
     
     Objective:
-        Maximize total score
+        Maximize total score or efficiency based on strategy.
     
     Constraints:
         - sum(price) <= budget
@@ -24,8 +29,8 @@ def optimize_team(
         df: DataFrame with columns: name, price, score, role
         budget: Maximum budget allowed
         team_size: Number of players to select (default: 11)
-        role_constraints: Dict mapping role names to required counts (default: {"WK": 1, "BAT": 4, "BOWL": 3, "ALL": 3})
-                         Example: {"WK": 1, "BAT": 5, "BOWL": 2, "ALL": 3}
+        role_constraints: Dict mapping role names to required counts
+        strategy: Optimization strategy (MAX_SCORE or MAX_SCORE_PER_COST)
     
     Returns:
         Dict containing:
@@ -78,11 +83,30 @@ def optimize_team(
         for idx in indices
     }
     
-    # Objective: Maximize total score (using pre-extracted arrays)
-    prob += pulp.lpSum(
-        scores[i] * player_vars[idx]
-        for i, idx in enumerate(indices)
-    ), "Total_Score"
+    # Objective: Maximize based on strategy
+    if strategy == OptimizationStrategy.MAX_SCORE_PER_COST:
+        # Strategy: Maximize sum of (score/cost) for each player (Efficiency)
+        # Note: If price is 0, we handle it to avoid division by zero
+        efficiencies = []
+        for i in range(len(prices)):
+            price = prices[i]
+            score = scores[i]
+            if price > 0:
+                efficiencies.append(score / price)
+            else:
+                # If price is 0, assign high efficiency if score > 0
+                efficiencies.append(score * 1000 if score > 0 else 0)
+                
+        prob += pulp.lpSum(
+            efficiencies[i] * player_vars[idx]
+            for i, idx in enumerate(indices)
+        ), "Total_Efficiency"
+    else:
+        # Default Strategy: Maximize Total Score
+        prob += pulp.lpSum(
+            scores[i] * player_vars[idx]
+            for i, idx in enumerate(indices)
+        ), "Total_Score"
     
     # Constraint 1: Total price <= budget (using pre-extracted arrays)
     prob += pulp.lpSum(
@@ -111,6 +135,7 @@ def optimize_team(
     # Check if solution was found
     if prob.status != pulp.LpStatusOptimal:
         status_msg = pulp.LpStatus[prob.status]
+        logger.warning(f"Optimization failed. Status: {status_msg}")
         raise ValueError(f"No optimal solution found. Status: {status_msg}")
     
     # Extract selected players
