@@ -1,5 +1,6 @@
 import pandas as pd
 from typing import Dict, Any, Optional
+from config import settings
 
 class OptimizationCache:
     def __init__(self):
@@ -19,10 +20,14 @@ class OptimizationCache:
 
     def get(self, key: str) -> Optional[Any]:
         """Retrieve a value from the cache."""
+        if not settings.CACHE_ENABLED:
+            return None
         return self._cache.get(key)
 
     def set(self, key: str, value: Any) -> None:
         """Store a value in the cache."""
+        if not settings.CACHE_ENABLED:
+            return
         self._cache[key] = value
 
     def clear(self) -> None:

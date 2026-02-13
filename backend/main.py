@@ -10,6 +10,7 @@ from optimizer import optimize_team
 from validator import validate_optimization_inputs, ValidationError
 from cache import optimization_cache
 from logger import get_logger
+from config import settings
 
 logger = get_logger(__name__)
 
@@ -193,4 +194,4 @@ async def optimize_team_endpoint(request: BudgetRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=settings.PORT)

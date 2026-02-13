@@ -6,6 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from typing import Optional
 import os
+from config import settings
 
 # SQLAlchemy base
 Base = declarative_base()
@@ -28,36 +29,6 @@ class Player(Base):
 
 
 # Database configuration
-def get_database_url() -> str:
-    """
-    Get database URL from environment variables with sensible defaults.
-    
-    Environment variables:
-        DATABASE_URL: Full database URL (preferred)
-        DB_HOST: Database host (default: localhost)
-        DB_PORT: Database port (default: 5432)
-        DB_NAME: Database name (default: cricket_optimizer)
-        DB_USER: Database user (default: postgres)
-        DB_PASSWORD: Database password (default: postgres)
-    
-    Returns:
-        Database connection URL
-    """
-    # Check for full DATABASE_URL first
-    database_url = os.getenv("DATABASE_URL")
-    if database_url:
-        return database_url
-    
-    # Build from individual components
-    db_host = os.getenv("DB_HOST", "localhost")
-    db_port = os.getenv("DB_PORT", "5432")
-    db_name = os.getenv("DB_NAME", "cricket_optimizer")
-    db_user = os.getenv("DB_USER", "postgres")
-    db_password = os.getenv("DB_PASSWORD", "postgres")
-    
-    return f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-
-
 # Global engine and session
 _engine: Optional[object] = None
 _SessionLocal: Optional[sessionmaker] = None
@@ -73,20 +44,33 @@ def init_database() -> bool:
     global _engine, _SessionLocal
     
     try:
-        database_url = get_database_url()
+        database_url = settings.DATABASE_URL
         
+        # Configure engine arguments based on database type
+        connect_args = {}
+        engine_args = {
+            "pool_pre_ping": True,
+            "echo": False
+        }
+        
+        if database_url.startswith("sqlite"):
+            connect_args["check_same_thread"] = False
+        else:
+            # PostgreSQL/others support pooling options
+            engine_args["pool_size"] = 5
+            engine_args["max_overflow"] = 10
+            
         # Create engine with connection pooling
         _engine = create_engine(
             database_url,
-            pool_pre_ping=True,  # Verify connections before using
-            pool_size=5,
-            max_overflow=10,
-            echo=False  # Set to True for SQL logging
+            connect_args=connect_args,
+            **engine_args
         )
         
-        # Test connection
+        # Test connection (using text() for SQLAlchemy 2.0 compatibility)
+        from sqlalchemy import text
         with _engine.connect() as conn:
-            conn.execute("SELECT 1")
+            conn.execute(text("SELECT 1"))
         
         # Create tables if they don't exist
         Base.metadata.create_all(bind=_engine)

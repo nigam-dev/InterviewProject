@@ -9,3 +9,4 @@ sqlalchemy>=2.0.35
 
 # Optional: PostgreSQL support (install if using PostgreSQL)
 # psycopg2-binary==2.9.9
+httpx<0.28.0
